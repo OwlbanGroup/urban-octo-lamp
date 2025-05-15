@@ -22,6 +22,16 @@ function App() {
   });
   const [tasks, setTasks] = useState([]);
   const [newTaskDescription, setNewTaskDescription] = useState('');
+  const [newTaskPriority, setNewTaskPriority] = useState(3);
+  const [newTaskTags, setNewTaskTags] = useState('');
+  const [newTaskRelatedDocs, setNewTaskRelatedDocs] = useState('');
+
+  // Research analytics state
+  const [tasksSummary, setTasksSummary] = useState(null);
+
+  // Research analysis AI states
+  const [researchAnalysisTask, setResearchAnalysisTask] = useState('');
+  const [researchAnalysisResult, setResearchAnalysisResult] = useState(null);
 
   const handleTrackPackage = async () => {
     try {
@@ -93,29 +103,67 @@ function App() {
     }
   };
 
-  // Create a new task
+  // Create a new task with extended fields
   const handleCreateTask = async () => {
     try {
+      const tagsArray = newTaskTags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+      const relatedDocsArray = newTaskRelatedDocs.split(',').map(doc => doc.trim()).filter(doc => doc.length > 0);
       const response = await fetch('http://localhost:8000/tasks/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           agent: agent,
           description: newTaskDescription,
-          completed: false
+          completed: false,
+          priority: newTaskPriority,
+          tags: tagsArray,
+          related_documents: relatedDocsArray
         })
       });
       if (!response.ok) throw new Error('Error creating task');
       setNewTaskDescription('');
+      setNewTaskPriority(3);
+      setNewTaskTags('');
+      setNewTaskRelatedDocs('');
       fetchTasks();
+      fetchTasksSummary();
     } catch (error) {
       alert('Error creating task');
+    }
+  };
+
+  // Fetch research tasks summary
+  const fetchTasksSummary = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/research/tasks_summary');
+      if (!response.ok) throw new Error('Error fetching tasks summary');
+      const data = await response.json();
+      setTasksSummary(data);
+    } catch (error) {
+      alert('Error fetching tasks summary');
+    }
+  };
+
+  // Send research analysis task to AI
+  const handleSendResearchAnalysis = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/ai/send_research_analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-KEY': 'your-secure-api-key' },
+        body: JSON.stringify({ task: researchAnalysisTask })
+      });
+      if (!response.ok) throw new Error('Error sending research analysis task');
+      const data = await response.json();
+      setResearchAnalysisResult(data);
+    } catch (error) {
+      alert('Error sending research analysis task');
     }
   };
 
   useEffect(() => {
     fetchMessages();
     fetchTasks();
+    fetchTasksSummary();
   }, [agent]);
 
   return (
@@ -233,6 +281,23 @@ function App() {
             value={newTaskDescription}
             onChange={(e) => setNewTaskDescription(e.target.value)}
           />
+          <select value={newTaskPriority} onChange={(e) => setNewTaskPriority(parseInt(e.target.value))}>
+            <option value={1}>High</option>
+            <option value={2}>Medium</option>
+            <option value={3}>Low</option>
+          </select>
+          <input
+            type="text"
+            placeholder="Tags (comma separated)"
+            value={newTaskTags}
+            onChange={(e) => setNewTaskTags(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Related Documents (comma separated URLs or IDs)"
+            value={newTaskRelatedDocs}
+            onChange={(e) => setNewTaskRelatedDocs(e.target.value)}
+          />
           <button onClick={handleCreateTask}>Add Task</button>
         </div>
         <div>
@@ -242,9 +307,49 @@ function App() {
               <p>{task.description}</p>
               <p>Status: {task.completed ? 'Completed' : 'Pending'}</p>
               <p>Due: {task.due_date ? new Date(task.due_date).toLocaleString() : 'No due date'}</p>
+              <p>Priority: {task.priority === 1 ? 'High' : task.priority === 2 ? 'Medium' : 'Low'}</p>
+              <p>Tags: {task.tags.join(', ')}</p>
+              <p>Related Documents: {task.related_documents.join(', ')}</p>
             </div>
           ))}
         </div>
+      </section>
+
+      <section style={{ marginTop: '40px' }}>
+        <h2>Research Analytics Dashboard</h2>
+        {tasksSummary ? (
+          <div>
+            <p>Total Tasks: {tasksSummary.total_tasks}</p>
+            <p>Completed Tasks: {tasksSummary.completed_tasks}</p>
+            <p>Completion Rate: {(tasksSummary.completion_rate * 100).toFixed(2)}%</p>
+            <p>Priority Distribution:</p>
+            <ul>
+              <li>High: {tasksSummary.priority_distribution.high}</li>
+              <li>Medium: {tasksSummary.priority_distribution.medium}</li>
+              <li>Low: {tasksSummary.priority_distribution.low}</li>
+            </ul>
+          </div>
+        ) : (
+          <p>Loading analytics...</p>
+        )}
+      </section>
+
+      <section style={{ marginTop: '40px' }}>
+        <h2>Send Research Analysis Task to AI</h2>
+        <textarea
+          placeholder="Describe the research analysis task"
+          value={researchAnalysisTask}
+          onChange={(e) => setResearchAnalysisTask(e.target.value)}
+          rows={4}
+          style={{ width: '100%' }}
+        />
+        <button onClick={handleSendResearchAnalysis}>Send Analysis Task</button>
+        {researchAnalysisResult && (
+          <div>
+            <h3>Analysis Result:</h3>
+            <pre>{JSON.stringify(researchAnalysisResult, null, 2)}</pre>
+          </div>
+        )}
       </section>
     </div>
   );

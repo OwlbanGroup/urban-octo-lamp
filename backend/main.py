@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from ai_integration import router as ai_router
+from .ai_integration import router as ai_router
 
 app = FastAPI()
 
@@ -12,7 +12,7 @@ import random
 from databases import Database
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Base, Address as AddressModel, Package as PackageModel, Message as MessageModel, Task as TaskModel
+from .models import Base, Address as AddressModel, Package as PackageModel, Message as MessageModel, Task as TaskModel
 
 DATABASE_URL = "sqlite:///./test.db"
 
@@ -98,7 +98,10 @@ async def create_task(task: dict):
         agent=task.get("agent"),
         description=task.get("description"),
         completed=task.get("completed", False),
-        due_date=task.get("due_date")
+        due_date=task.get("due_date"),
+        priority=task.get("priority", 3),
+        tags=",".join(task.get("tags", [])) if task.get("tags") else "",
+        related_documents=",".join(task.get("related_documents", [])) if task.get("related_documents") else ""
     )
     session.add(new_task)
     session.commit()
@@ -117,6 +120,49 @@ async def get_tasks(agent: str):
             "description": task.description,
             "completed": task.completed,
             "due_date": task.due_date.isoformat() if task.due_date else None,
+            "priority": task.priority,
+            "tags": task.tags.split(",") if task.tags else [],
+            "related_documents": task.related_documents.split(",") if task.related_documents else [],
+            "created_at": task.created_at.isoformat()
+        }
+        for task in tasks
+    ]
+
+@app.get("/research/tasks_summary")
+async def tasks_summary():
+    session = SessionLocal()
+    total_tasks = session.query(TaskModel).count()
+    completed_tasks = session.query(TaskModel).filter(TaskModel.completed == True).count()
+    high_priority = session.query(TaskModel).filter(TaskModel.priority == 1).count()
+    medium_priority = session.query(TaskModel).filter(TaskModel.priority == 2).count()
+    low_priority = session.query(TaskModel).filter(TaskModel.priority == 3).count()
+    session.close()
+    return {
+        "total_tasks": total_tasks,
+        "completed_tasks": completed_tasks,
+        "completion_rate": (completed_tasks / total_tasks) if total_tasks > 0 else 0,
+        "priority_distribution": {
+            "high": high_priority,
+            "medium": medium_priority,
+            "low": low_priority
+        }
+    }
+
+@app.get("/research/tasks_by_tag/{tag}")
+async def tasks_by_tag(tag: str):
+    session = SessionLocal()
+    tasks = session.query(TaskModel).filter(TaskModel.tags.like(f"%{tag}%")).all()
+    session.close()
+    return [
+        {
+            "id": task.id,
+            "agent": task.agent,
+            "description": task.description,
+            "completed": task.completed,
+            "due_date": task.due_date.isoformat() if task.due_date else None,
+            "priority": task.priority,
+            "tags": task.tags.split(",") if task.tags else [],
+            "related_documents": task.related_documents.split(",") if task.related_documents else [],
             "created_at": task.created_at.isoformat()
         }
         for task in tasks

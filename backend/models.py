@@ -43,4 +43,7 @@ class Task(Base):
     description = Column(Text, nullable=False)
     completed = Column(Boolean, default=False)
     due_date = Column(DateTime, nullable=True)
+    priority = Column(Integer, default=3)  # 1=High, 2=Medium, 3=Low
+    tags = Column(String, default="")  # Comma-separated tags
+    related_documents = Column(String, default="")  # Comma-separated document URLs or IDs
     created_at = Column(DateTime, default=datetime.utcnow)
