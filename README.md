@@ -9,16 +9,17 @@ The backend is built with FastAPI and uses SQLite for data storage.
 ### Setup and Run
 
 1. Navigate to the backend directory:
+
    ```
    cd backend
    ```
 
-2. Install dependencies:
-   ```
+2. Install dependend
    pip install -r requirements.txt
    ```
 
 3. Run the FastAPI server:
+
    ```
    uvicorn main:app --reload
    ```
@@ -32,16 +33,19 @@ The frontend is a React app that interacts with the backend API.
 ### Setup and Run
 
 1. Navigate to the frontend directory:
+
    ```
    cd frontend
    ```
 
 2. Install dependencies:
+
    ```
    npm install
    ```
 
 3. Run the React development server:
+
    ```
    npm start
    ```
