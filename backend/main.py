@@ -1,9 +1,16 @@
 from fastapi import FastAPI, HTTPException
 from .ai_integration import router as ai_router
+from fastapi import Depends
+from .auth import get_current_user
 
 app = FastAPI()
 
 app.include_router(ai_router)
+
+# Example of protecting an endpoint with authentication
+@app.get("/protected")
+async def protected_route(current_user: dict = Depends(get_current_user)):
+    return {"message": f"Hello, {current_user['sub']}! This is a protected route."}
 
 from pydantic import BaseModel
 from typing import Optional

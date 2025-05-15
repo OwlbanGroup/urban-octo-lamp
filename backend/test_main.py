@@ -4,29 +4,29 @@ from backend.main import app
 
 client = TestClient(app)
 
-def test_create_and_get_task():
+def test_create_task_and_get_tasks():
     # Create a new task
-    task_data = {
+    task_payload = {
         "agent": "test_agent",
-        "description": "Test task",
+        "description": "Test task creation",
         "completed": False,
-        "priority": 2,
-        "tags": ["test", "task"],
+        "priority": 1,
+        "tags": ["urgent", "test"],
         "related_documents": ["doc1", "doc2"]
     }
-    response = client.post("/tasks/", json=task_data)
+    response = client.post("/tasks/", json=task_payload)
     assert response.status_code == 200
-    json_resp = response.json()
-    assert "id" in json_resp
-    task_id = json_resp["id"]
+    data = response.json()
+    assert "id" in data
+    task_id = data["id"]
 
-    # Get tasks for the agent
-    response = client.get(f"/tasks/{task_data['agent']}")
+    # Retrieve tasks for the agent
+    response = client.get(f"/tasks/{task_payload['agent']}")
     assert response.status_code == 200
     tasks = response.json()
     assert any(task["id"] == task_id for task in tasks)
 
-def test_tasks_summary():
+def test_get_tasks_summary():
     response = client.get("/research/tasks_summary")
     assert response.status_code == 200
     summary = response.json()
@@ -35,7 +35,7 @@ def test_tasks_summary():
     assert "completion_rate" in summary
     assert "priority_distribution" in summary
 
-def test_tasks_by_tag():
+def test_get_tasks_by_tag():
     tag = "test"
     response = client.get(f"/research/tasks_by_tag/{tag}")
     assert response.status_code == 200
@@ -45,19 +45,19 @@ def test_tasks_by_tag():
 
 def test_send_and_get_messages():
     # Send a message
-    message_data = {
-        "sender": "test_sender",
-        "recipient": "test_recipient",
+    message_payload = {
+        "sender": "sender1",
+        "recipient": "recipient1",
         "subject": "Test Subject",
-        "body": "Test message body"
+        "body": "This is a test message."
     }
-    response = client.post("/messages/", json=message_data)
+    response = client.post("/messages/", json=message_payload)
     assert response.status_code == 200
-    json_resp = response.json()
-    assert "id" in json_resp
+    data = response.json()
+    assert "id" in data
 
     # Get messages for recipient
-    response = client.get(f"/messages/{message_data['recipient']}")
+    response = client.get(f"/messages/{message_payload['recipient']}")
     assert response.status_code == 200
     messages = response.json()
-    assert any(msg["subject"] == message_data["subject"] for msg in messages)
+    assert any(msg["subject"] == message_payload["subject"] for msg in messages)
