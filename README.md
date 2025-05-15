@@ -6,21 +6,23 @@ This project is a demonstration of a Global AI Postal System with backend API an
 
 The backend is built with FastAPI and uses SQLite for data storage.
 
-### Setup and Run
+### Backend Setup and Run
 
 1. Navigate to the backend directory:
 
-   ```
+   ```bash
    cd backend
    ```
 
-2. Install dependend
+2. Install dependencies:
+
+   ```bash
    pip install -r requirements.txt
    ```
 
 3. Run the FastAPI server:
 
-   ```
+   ```bash
    uvicorn main:app --reload
    ```
 
@@ -34,19 +36,19 @@ The frontend is a React app that interacts with the backend API.
 
 1. Navigate to the frontend directory:
 
-   ```
+   ```bash
    cd frontend
    ```
 
 2. Install dependencies:
 
-   ```
+   ```bash
    npm install
    ```
 
 3. Run the React development server:
 
-   ```
+   ```bash
    npm start
    ```
 

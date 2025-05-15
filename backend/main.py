@@ -6,7 +6,7 @@ import random
 from databases import Database
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Base, Address as AddressModel, Package as PackageModel
+from models import Base, Address as AddressModel, Package as PackageModel, Message as MessageModel, Task as TaskModel
 
 DATABASE_URL = "sqlite:///./test.db"
 
@@ -48,66 +48,73 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
-@app.post("/packages/", response_model=Package)
-async def create_package(pkg_req: PackageCreateRequest):
-    pkg_id = str(uuid4())
-    estimated_days = estimate_delivery_time(pkg_req.origin, pkg_req.destination)
-    query_origin = AddressModel(
-        street=pkg_req.origin.street,
-        city=pkg_req.origin.city,
-        state=pkg_req.origin.state,
-        country=pkg_req.origin.country,
-        postal_code=pkg_req.origin.postal_code
-    )
-    query_destination = AddressModel(
-        street=pkg_req.destination.street,
-        city=pkg_req.destination.city,
-        state=pkg_req.destination.state,
-        country=pkg_req.destination.country,
-        postal_code=pkg_req.destination.postal_code
-    )
+@app.post("/messages/", response_model=dict)
+async def send_message(message: dict):
     session = SessionLocal()
-    session.add(query_origin)
-    session.add(query_destination)
-    session.commit()
-    session.refresh(query_origin)
-    session.refresh(query_destination)
-
-    package = PackageModel(
-        id=pkg_id,
-        sender=pkg_req.sender,
-        recipient=pkg_req.recipient,
-        origin_id=query_origin.id,
-        destination_id=query_destination.id,
-        status="Created",
-        estimated_delivery_days=estimated_days
+    msg_id = str(uuid4())
+    new_message = MessageModel(
+        id=msg_id,
+        sender=message.get("sender"),
+        recipient=message.get("recipient"),
+        subject=message.get("subject"),
+        body=message.get("body"),
+        read=False
     )
-    session.add(package)
+    session.add(new_message)
     session.commit()
-    session.refresh(package)
     session.close()
+    return {"message": "Message sent", "id": msg_id}
 
-    return Package(
-        id=package.id,
-        sender=package.sender,
-        recipient=package.recipient,
-        origin=Address(
-            street=query_origin.street,
-            city=query_origin.city,
-            state=query_origin.state,
-            country=query_origin.country,
-            postal_code=query_origin.postal_code
-        ),
-        destination=Address(
-            street=query_destination.street,
-            city=query_destination.city,
-            state=query_destination.state,
-            country=query_destination.country,
-            postal_code=query_destination.postal_code
-        ),
-        status=package.status,
-        estimated_delivery_days=package.estimated_delivery_days
+@app.get("/messages/{recipient}", response_model=list)
+async def get_messages(recipient: str):
+    session = SessionLocal()
+    messages = session.query(MessageModel).filter(MessageModel.recipient == recipient).all()
+    session.close()
+    return [
+        {
+            "id": msg.id,
+            "sender": msg.sender,
+            "recipient": msg.recipient,
+            "subject": msg.subject,
+            "body": msg.body,
+            "timestamp": msg.timestamp.isoformat(),
+            "read": msg.read
+        }
+        for msg in messages
+    ]
+
+@app.post("/tasks/", response_model=dict)
+async def create_task(task: dict):
+    session = SessionLocal()
+    task_id = str(uuid4())
+    new_task = TaskModel(
+        id=task_id,
+        agent=task.get("agent"),
+        description=task.get("description"),
+        completed=task.get("completed", False),
+        due_date=task.get("due_date")
     )
+    session.add(new_task)
+    session.commit()
+    session.close()
+    return {"message": "Task created", "id": task_id}
+
+@app.get("/tasks/{agent}", response_model=list)
+async def get_tasks(agent: str):
+    session = SessionLocal()
+    tasks = session.query(TaskModel).filter(TaskModel.agent == agent).all()
+    session.close()
+    return [
+        {
+            "id": task.id,
+            "agent": task.agent,
+            "description": task.description,
+            "completed": task.completed,
+            "due_date": task.due_date.isoformat() if task.due_date else None,
+            "created_at": task.created_at.isoformat()
+        }
+        for task in tasks
+    ]
 
 @app.get("/packages/{package_id}", response_model=Package)
 async def get_package(package_id: str):

@@ -1,5 +1,6 @@
-from sqlalchemy import Column, String, Integer, ForeignKey
+from sqlalchemy import Column, String, Integer, ForeignKey, Text, DateTime, Boolean
 from sqlalchemy.orm import relationship, declarative_base
+from datetime import datetime
 
 Base = declarative_base()
 
@@ -24,3 +25,22 @@ class Package(Base):
 
     origin = relationship("Address", foreign_keys=[origin_id])
     destination = relationship("Address", foreign_keys=[destination_id])
+
+class Message(Base):
+    __tablename__ = "messages"
+    id = Column(String, primary_key=True, index=True)
+    sender = Column(String, nullable=False)
+    recipient = Column(String, nullable=False)
+    subject = Column(String, nullable=False)
+    body = Column(Text, nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    read = Column(Boolean, default=False)
+
+class Task(Base):
+    __tablename__ = "tasks"
+    id = Column(String, primary_key=True, index=True)
+    agent = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    completed = Column(Boolean, default=False)
+    due_date = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
