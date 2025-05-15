@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 
 function App() {
   const [packageId, setPackageId] = useState('');
@@ -26,8 +25,10 @@ function App() {
 
   const handleTrackPackage = async () => {
     try {
-      const response = await axios.get("http://localhost:8000/packages/" + packageId);
-      setPackageInfo(response.data);
+      const response = await fetch("http://localhost:8000/packages/" + packageId);
+      if (!response.ok) throw new Error('Package not found');
+      const data = await response.json();
+      setPackageInfo(data);
     } catch (error) {
       setPackageInfo(null);
       alert('Package not found');
@@ -36,8 +37,11 @@ function App() {
 
   const handleValidateAddress = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/validate_address/', { params: address });
-      setAddressValidation(response.data);
+      const params = new URLSearchParams(address).toString();
+      const response = await fetch('http://localhost:8000/validate_address/?' + params);
+      if (!response.ok) throw new Error('Error validating address');
+      const data = await response.json();
+      setAddressValidation(data);
     } catch (error) {
       setAddressValidation(null);
       alert('Error validating address');
@@ -47,8 +51,10 @@ function App() {
   // Fetch messages for the agent
   const fetchMessages = async () => {
     try {
-      const response = await axios.get(`http://localhost:8000/messages/${agent}`);
-      setMessages(response.data);
+      const response = await fetch(`http://localhost:8000/messages/${agent}`);
+      if (!response.ok) throw new Error('Error fetching messages');
+      const data = await response.json();
+      setMessages(data);
     } catch (error) {
       alert('Error fetching messages');
     }
@@ -57,12 +63,17 @@ function App() {
   // Send a new message
   const handleSendMessage = async () => {
     try {
-      await axios.post('http://localhost:8000/messages/', {
-        sender: agent,
-        recipient: newMessage.recipient,
-        subject: newMessage.subject,
-        body: newMessage.body
+      const response = await fetch('http://localhost:8000/messages/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender: agent,
+          recipient: newMessage.recipient,
+          subject: newMessage.subject,
+          body: newMessage.body
+        })
       });
+      if (!response.ok) throw new Error('Error sending message');
       setNewMessage({ recipient: '', subject: '', body: '' });
       fetchMessages();
     } catch (error) {
@@ -73,8 +84,10 @@ function App() {
   // Fetch tasks for the agent
   const fetchTasks = async () => {
     try {
-      const response = await axios.get(`http://localhost:8000/tasks/${agent}`);
-      setTasks(response.data);
+      const response = await fetch(`http://localhost:8000/tasks/${agent}`);
+      if (!response.ok) throw new Error('Error fetching tasks');
+      const data = await response.json();
+      setTasks(data);
     } catch (error) {
       alert('Error fetching tasks');
     }
@@ -83,11 +96,16 @@ function App() {
   // Create a new task
   const handleCreateTask = async () => {
     try {
-      await axios.post('http://localhost:8000/tasks/', {
-        agent: agent,
-        description: newTaskDescription,
-        completed: false
+      const response = await fetch('http://localhost:8000/tasks/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: agent,
+          description: newTaskDescription,
+          completed: false
+        })
       });
+      if (!response.ok) throw new Error('Error creating task');
       setNewTaskDescription('');
       fetchTasks();
     } catch (error) {

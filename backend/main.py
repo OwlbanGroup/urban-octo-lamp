@@ -1,4 +1,10 @@
 from fastapi import FastAPI, HTTPException
+from ai_integration import router as ai_router
+
+app = FastAPI()
+
+app.include_router(ai_router)
+
 from pydantic import BaseModel
 from typing import Optional
 from uuid import uuid4
