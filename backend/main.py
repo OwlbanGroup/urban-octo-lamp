@@ -3,15 +3,6 @@ from .ai_integration import router as ai_router
 from fastapi import Depends
 from .auth import get_current_user
 
-app = FastAPI()
-
-app.include_router(ai_router)
-
-# Example of protecting an endpoint with authentication
-@app.get("/protected")
-async def protected_route(current_user: dict = Depends(get_current_user)):
-    return {"message": f"Hello, {current_user['sub']}! This is a protected route."}
-
 from pydantic import BaseModel
 from typing import Optional
 from uuid import uuid4
@@ -28,6 +19,13 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 app = FastAPI(title="Global AI Postal System API")
+
+app.include_router(ai_router)
+
+# Example of protecting an endpoint with authentication
+@app.get("/protected")
+async def protected_route(current_user: dict = Depends(get_current_user)):
+    return {"message": f"Hello, {current_user['sub']}! This is a protected route."}
 
 # Pydantic models for request/response
 class Address(BaseModel):
@@ -51,7 +49,7 @@ class PackageCreateRequest(BaseModel):
     recipient: str
     origin: Address
     destination: Address
-
+    
 @app.on_event("startup")
 async def startup():
     await database.connect()
