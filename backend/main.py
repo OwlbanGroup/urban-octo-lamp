@@ -113,6 +113,32 @@ async def get_messages(recipient: str):
         for msg in messages
     ]
 
+@app.post("/api/track", response_model=dict)
+async def track_package(data: dict):
+    package_id = data.get("packageId")
+    if not package_id:
+        raise HTTPException(status_code=400, detail="packageId is required")
+    session = SessionLocal()
+    package = session.query(PackageModel).filter(PackageModel.id == package_id).first()
+    if not package:
+        session.close()
+        raise HTTPException(status_code=404, detail="Package not found")
+    # For simplicity, return status and a dummy location
+    status = package.status
+    location = "Distribution Center"
+    session.close()
+    return {"status": status, "location": location}
+
+@app.post("/create-checkout-session", response_model=dict)
+async def create_checkout_session(data: dict, current_user: dict = Depends(auth_get_current_user)):
+    price_id = data.get("price_id")
+    if not price_id:
+        raise HTTPException(status_code=400, detail="price_id is required")
+    # Placeholder: Implement Stripe checkout session creation here
+    # For now, return a dummy checkout URL
+    checkout_url = f"https://checkout.stripe.com/pay/{price_id}"
+    return {"checkout_url": checkout_url}
+        
 @app.post("/tasks/", response_model=dict)
 async def create_task(task: dict):
     session = SessionLocal()
