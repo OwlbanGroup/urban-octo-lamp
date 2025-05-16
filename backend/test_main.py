@@ -1,8 +1,17 @@
 import pytest
 from fastapi.testclient import TestClient
-from backend.main import app
+from backend.main import app, database, engine
+from backend.models import Base
 
 client = TestClient(app)
+
+@pytest.fixture(scope="module", autouse=True)
+def setup_database():
+    # Create tables
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Drop tables after tests
+    Base.metadata.drop_all(bind=engine)
 
 def test_protected_route_unauthorized():
     response = client.get("/protected")
