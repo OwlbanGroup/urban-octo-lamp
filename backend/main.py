@@ -1,7 +1,9 @@
-from fastapi import FastAPI, HTTPException
-from .ai_integration import router as ai_router
-from fastapi import Depends
-from .auth import get_current_user
+from fastapi import FastAPI, HTTPException, Depends
+from .ai_integration import router as ai_router, tasks_store
+from fastapi.security import OAuth2PasswordBearer
+from .auth import get_current_user as auth_get_current_user, router as auth_router
+from backend.payment import router as payment_router
+from fastapi import Security
 
 from pydantic import BaseModel
 from typing import Optional
@@ -20,19 +22,30 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 app = FastAPI(title="Global AI Postal System API")
 
-from backend.auth import router as auth_router
-
 app.include_router(auth_router)
 app.include_router(ai_router)
+app.include_router(payment_router)
 
 from backend.autonomous_delivery import router as autonomous_router
 app.include_router(autonomous_router)
 
 # Example of protecting an endpoint with authentication
 @app.get("/protected")
-async def protected_route(current_user: dict = Depends(get_current_user)):
+async def protected_route(current_user: dict = Depends(auth_get_current_user)):
     return {"message": f"Hello, {current_user.get('sub', current_user.get('username'))}! This is a protected route."}
 
+# Protect AI endpoints to require subscription
+async def verify_subscription(current_user: dict = Depends(auth_get_current_user)):
+    if not current_user.get("is_subscribed", False):
+        raise HTTPException(status_code=403, detail="Subscription required")
+    return current_user
+
+# Override AI router dependencies to require subscription
+for route in ai_router.routes:
+    if route.path.startswith("/ai/"):
+        route.dependencies = [Depends(verify_subscription)]
+
+        
 # Pydantic models for request/response
 class Address(BaseModel):
     street: str

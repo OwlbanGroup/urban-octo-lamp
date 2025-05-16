@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import LoginForm from './LoginForm';
+import Subscription from './Subscription';
 
 function App({ initialLoggedIn = false }) {
   const [loggedIn, setLoggedIn] = React.useState(initialLoggedIn);
@@ -34,6 +35,9 @@ function App({ initialLoggedIn = false }) {
   // Research Analysis Task state
   const [researchTaskDescription, setResearchTaskDescription] = React.useState('');
 
+  // Subscription state
+  const [apiKey, setApiKey] = React.useState('');
+
   const handleLogin = () => {
     setLoggedIn(true);
   };
@@ -60,7 +64,7 @@ function App({ initialLoggedIn = false }) {
   const fetchRevenueOpportunities = async () => {
     try {
       const response = await fetch('/ai/revenue_opportunities', {
-        headers: { 'X-API-KEY': 'default-secure-api-key' },
+        headers: { 'X-API-KEY': apiKey || 'default-secure-api-key' },
       });
       if (!response.ok) {
         throw new Error('Failed to fetch revenue opportunities');
@@ -76,7 +80,7 @@ function App({ initialLoggedIn = false }) {
   const fetchTasks = async () => {
     try {
       const response = await fetch('/ai/get_responses/' + agent, {
-        headers: { 'X-API-KEY': 'default-secure-api-key' },
+        headers: { 'X-API-KEY': apiKey || 'default-secure-api-key' },
       });
       if (!response.ok) {
         throw new Error('Failed to fetch tasks');
@@ -109,7 +113,7 @@ function App({ initialLoggedIn = false }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-KEY': 'default-secure-api-key',
+          'X-API-KEY': apiKey || 'default-secure-api-key',
         },
         body: JSON.stringify(task),
       });
@@ -132,7 +136,7 @@ function App({ initialLoggedIn = false }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-KEY': 'default-secure-api-key',
+          'X-API-KEY': apiKey || 'default-secure-api-key',
         },
         body: JSON.stringify({ description: researchTaskDescription }),
       });
@@ -147,7 +151,7 @@ function App({ initialLoggedIn = false }) {
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchTasks();
   }, [agent]);
 
@@ -158,6 +162,8 @@ function App({ initialLoggedIn = false }) {
   return (
     <div style={{ padding: 20 }}>
       <h1>Global AI Postal System</h1>
+
+      <Subscription apiKey={apiKey} onSubscriptionChange={setApiKey} />
 
       <section>
         <h2>Track Package</h2>
