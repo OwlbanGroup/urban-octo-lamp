@@ -1,12 +1,155 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LoginForm from './LoginForm';
 
 function App({ initialLoggedIn = false }) {
-  const [loggedIn, setLoggedIn] = useState(initialLoggedIn);
+  const [loggedIn, setLoggedIn] = React.useState(initialLoggedIn);
+
+  // Package tracking state
+  const [packageId, setPackageId] = React.useState('');
+  const [trackingStatus, setTrackingStatus] = React.useState(null);
+  const [trackingLocation, setTrackingLocation] = React.useState(null);
+
+  // Revenue optimizer state
+  const [revenueOpportunities, setRevenueOpportunities] = React.useState([]);
+
+  // AI Agent Mail Inbox state
+  const [agent, setAgent] = React.useState('agent1');
+  const [messages, setMessages] = React.useState([]);
+  const [newMessage, setNewMessage] = React.useState({
+    recipient: '',
+    subject: '',
+    body: '',
+  });
+
+  // AI Agent Tasks state
+  const [tasks, setTasks] = React.useState([]);
+  const [newTaskDescription, setNewTaskDescription] = React.useState('');
+  const [newTaskPriority, setNewTaskPriority] = React.useState('1');
+  const [newTaskTags, setNewTaskTags] = React.useState('');
+  const [newTaskRelatedDocs, setNewTaskRelatedDocs] = React.useState('');
+
+  // Research Analytics Dashboard state
+  const [researchSummary, setResearchSummary] = React.useState('Loading analytics...');
+
+  // Research Analysis Task state
+  const [researchTaskDescription, setResearchTaskDescription] = React.useState('');
 
   const handleLogin = () => {
     setLoggedIn(true);
   };
+
+  const handleTrackPackage = async () => {
+    try {
+      const response = await fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch tracking info');
+      }
+      const data = await response.json();
+      setTrackingStatus(data.status);
+      setTrackingLocation(data.location);
+    } catch (error) {
+      setTrackingStatus('Error fetching tracking info');
+      setTrackingLocation(null);
+    }
+  };
+
+  const fetchRevenueOpportunities = async () => {
+    try {
+      const response = await fetch('/ai/revenue_opportunities', {
+        headers: { 'X-API-KEY': 'default-secure-api-key' },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch revenue opportunities');
+      }
+      const data = await response.json();
+      setRevenueOpportunities(data.opportunities);
+    } catch (error) {
+      setRevenueOpportunities([]);
+    }
+  };
+
+  // Fetch AI agent tasks
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('/ai/get_responses/' + agent, {
+        headers: { 'X-API-KEY': 'default-secure-api-key' },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch tasks');
+      }
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setTasks(data);
+      } else if (data && Array.isArray(data.opportunities)) {
+        setTasks(data.opportunities);
+      } else {
+        console.warn('Fetched tasks data is not an array:', data);
+        setTasks([]);
+      }
+    } catch (error) {
+      setTasks([]);
+    }
+  };
+
+  // Add new AI task
+  const addTask = async () => {
+    if (!newTaskDescription) return;
+    const task = {
+      id: Date.now().toString(),
+      description: newTaskDescription,
+      status: 'pending',
+      result: null,
+    };
+    try {
+      const response = await fetch('/ai/send_task', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': 'default-secure-api-key',
+        },
+        body: JSON.stringify(task),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to add task');
+      }
+      await response.json();
+      setNewTaskDescription('');
+      fetchTasks();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Send research analysis task
+  const sendResearchAnalysis = async () => {
+    if (!researchTaskDescription) return;
+    try {
+      const response = await fetch('/ai/send_research_analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': 'default-secure-api-key',
+        },
+        body: JSON.stringify({ description: researchTaskDescription }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to send research analysis task');
+      }
+      const data = await response.json();
+      setResearchSummary(data.summary);
+      setResearchTaskDescription('');
+    } catch (error) {
+      setResearchSummary('Error sending research analysis task');
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, [agent]);
 
   if (!loggedIn) {
     return <LoginForm onLogin={handleLogin} />;
@@ -18,8 +161,19 @@ function App({ initialLoggedIn = false }) {
 
       <section>
         <h2>Track Package</h2>
-        <input placeholder="Enter Package ID" type="text" />
-        <button>Track</button>
+        <input
+          placeholder="Enter Package ID"
+          type="text"
+          value={packageId}
+          onChange={(e) => setPackageId(e.target.value)}
+        />
+        <button onClick={handleTrackPackage}>Track</button>
+        {trackingStatus && (
+          <div>
+            <p>Status: {trackingStatus}</p>
+            {trackingLocation && <p>Location: {trackingLocation}</p>}
+          </div>
+        )}
       </section>
 
       <section style={{ marginTop: 40 }}>
@@ -36,7 +190,12 @@ function App({ initialLoggedIn = false }) {
         <h2>AI Agent Mail Inbox</h2>
         <div>
           <label htmlFor="agent-input">Agent:</label>
-          <input id="agent-input" type="text" defaultValue="agent1" />
+          <input
+            id="agent-input"
+            type="text"
+            value={agent}
+            onChange={(e) => setAgent(e.target.value)}
+          />
         </div>
         <div>
           <h3>Messages</h3>
@@ -54,30 +213,79 @@ function App({ initialLoggedIn = false }) {
       <section style={{ marginTop: 40 }}>
         <h2>AI Agent Tasks</h2>
         <div>
-          <input placeholder="New task description" type="text" />
-          <select>
+          <input
+            placeholder="New task description"
+            type="text"
+            value={newTaskDescription}
+            onChange={(e) => setNewTaskDescription(e.target.value)}
+          />
+          <select
+            value={newTaskPriority}
+            onChange={(e) => setNewTaskPriority(e.target.value)}
+          >
             <option value="1">High</option>
             <option value="2">Medium</option>
             <option value="3">Low</option>
           </select>
-          <input placeholder="Tags (comma separated)" type="text" />
-          <input placeholder="Related Documents (comma separated URLs or IDs)" type="text" />
-          <button>Add Task</button>
+          <input
+            placeholder="Tags (comma separated)"
+            type="text"
+            value={newTaskTags}
+            onChange={(e) => setNewTaskTags(e.target.value)}
+          />
+          <input
+            placeholder="Related Documents (comma separated URLs or IDs)"
+            type="text"
+            value={newTaskRelatedDocs}
+            onChange={(e) => setNewTaskRelatedDocs(e.target.value)}
+          />
+          <button onClick={addTask}>Add Task</button>
         </div>
         <div>
-          <p>No tasks</p>
+          {tasks.length === 0 ? (
+            <p>No tasks</p>
+          ) : (
+            <ul>
+              {tasks.map((task) => (
+                <li key={task.id}>
+                  <strong>{task.description}</strong> - Status: {task.status}
+                  {task.result && <p>Result: {task.result}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 
       <section style={{ marginTop: 40 }}>
         <h2>Research Analytics Dashboard</h2>
-        <p>Loading analytics...</p>
+        <p>{researchSummary}</p>
       </section>
 
       <section style={{ marginTop: 40 }}>
         <h2>Send Research Analysis Task to AI</h2>
-        <textarea placeholder="Describe the research analysis task" rows={4} style={{ width: '100%' }} />
-        <button>Send Analysis Task</button>
+        <textarea
+          placeholder="Describe the research analysis task"
+          rows={4}
+          style={{ width: '100%' }}
+          value={researchTaskDescription}
+          onChange={(e) => setResearchTaskDescription(e.target.value)}
+        />
+        <button onClick={sendResearchAnalysis}>Send Analysis Task</button>
+      </section>
+
+      <section style={{ marginTop: 40 }}>
+        <h2>Revenue Optimizer</h2>
+        <button onClick={fetchRevenueOpportunities}>Identify Revenue Opportunities</button>
+        {revenueOpportunities.length > 0 && (
+          <ul>
+            {revenueOpportunities.map((opportunity) => (
+              <li key={opportunity.id}>
+                {opportunity.description} - Potential Revenue: ${opportunity.potential_revenue.toLocaleString()}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );
