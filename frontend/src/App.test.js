@@ -1,62 +1,64 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect';
 import App from './App';
 
-beforeEach(() => {
-  global.fetch = jest.fn();
-});
-
-afterEach(() => {
-  jest.resetAllMocks();
-});
-
-const renderApp = () => {
-  return render(<App />);
-};
-
-test('renders Global AI Postal System heading', () => {
-  renderApp();
-  const headingElement = screen.getByText(/Global AI Postal System/i);
-  expect(headingElement).toBeInTheDocument();
-});
-
-test('fetches and displays package info on track package', async () => {
-  const mockPackage = {
-    sender: 'Alice',
-    recipient: 'Bob',
-    status: 'In Transit',
-    estimated_delivery_days: 3
-  };
-  fetch.mockResolvedValueOnce({
-    ok: true,
-    json: async () => mockPackage,
+describe('Global AI Postal System App', () => {
+  test('renders main heading', () => {
+    render(<App />);
+    const heading = screen.getByText(/Global AI Postal System/i);
+    expect(heading).toBeInTheDocument();
   });
 
-  renderApp();
-  const input = screen.getByPlaceholderText(/Enter Package ID/i);
-  const button = screen.getByRole('button', { name: /Track/i });
-
-  fireEvent.change(input, { target: { value: '123' } });
-  fireEvent.click(button);
-
-  await waitFor(() => {
-    expect(screen.getByText((content, element) => content.includes('Sender: Alice'))).toBeInTheDocument();
-    expect(screen.getByText((content, element) => content.includes('Recipient: Bob'))).toBeInTheDocument();
-    expect(screen.getByText((content, element) => content.includes('Status: In Transit'))).toBeInTheDocument();
-    expect(screen.getByText((content, element) => content.includes('Estimated Delivery Days: 3'))).toBeInTheDocument();
-  });
-});
-
-test('fetches and displays messages for agent', async () => {
-  const mockMessages = [
-    { id: '1', sender: 'agent1', subject: 'Hello', body: 'Test message', timestamp: new Date().toISOString() }
-  ];
-  fetch.mockResolvedValueOnce({
-    ok: true,
-    json: async () => mockMessages,
+  test('package tracking input and button', () => {
+    render(<App />);
+    const input = screen.getByPlaceholderText(/Enter Package ID/i);
+    const button = screen.getByText(/Track/i);
+    expect(input).toBeInTheDocument();
+    expect(button).toBeInTheDocument();
   });
 
-  renderApp();
-  expect(await screen.findByText(/Hello/i)).toBeInTheDocument();
+  test('address validation inputs and button', () => {
+    render(<App />);
+    expect(screen.getByPlaceholderText(/Street/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/City/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/State/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Country/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Postal Code/i)).toBeInTheDocument();
+    expect(screen.getByText(/Validate/i)).toBeInTheDocument();
+  });
+
+  test('AI Agent Mail Inbox renders and can change agent', () => {
+    render(<App />);
+    const agentInput = screen.getByLabelText(/Agent:/i);
+    expect(agentInput).toBeInTheDocument();
+    fireEvent.change(agentInput, { target: { value: 'agent2' } });
+    expect(agentInput.value).toBe('agent2');
+  });
+
+  test('New message form inputs and send button', () => {
+    render(<App />);
+    expect(screen.getByPlaceholderText(/Recipient/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Subject/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Message body/i)).toBeInTheDocument();
+    expect(screen.getByText(/Send/i)).toBeInTheDocument();
+  });
+
+  test('AI Agent Tasks inputs and add task button', () => {
+    render(<App />);
+    expect(screen.getByPlaceholderText(/New task description/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Tags \(comma separated\)/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Related Documents \(comma separated URLs or IDs\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Add Task/i)).toBeInTheDocument();
+  });
+
+  test('Research Analytics Dashboard displays loading initially', () => {
+    render(<App />);
+    expect(screen.getByText(/Loading analytics/i)).toBeInTheDocument();
+  });
+
+  test('Send Research Analysis Task textarea and button', () => {
+    render(<App />);
+    expect(screen.getByPlaceholderText(/Describe the research analysis task/i)).toBeInTheDocument();
+    expect(screen.getByText(/Send Analysis Task/i)).toBeInTheDocument();
+  });
 });

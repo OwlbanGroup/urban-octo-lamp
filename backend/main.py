@@ -221,3 +221,25 @@ def estimate_delivery_time(origin: Address, destination: Address) -> int:
     if origin.country != destination.country:
         days += 2
     return days
+
+@app.get("/sustainability/carbon_footprint/")
+async def carbon_footprint(origin: Address, destination: Address):
+    """
+    Estimate the carbon footprint of a delivery route based on origin and destination.
+    """
+    # Simple estimation: local delivery = 1 unit, international = 5 units
+    footprint = 1
+    if origin.country != destination.country:
+        footprint = 5
+    return {"carbon_footprint_units": footprint, "message": "Estimated carbon footprint for delivery route"}
+
+@app.get("/notifications/new_items/{agent}")
+async def get_new_notifications(agent: str):
+    """
+    Get count of new messages and tasks for the agent.
+    """
+    session = SessionLocal()
+    new_messages_count = session.query(MessageModel).filter(MessageModel.recipient == agent, MessageModel.read == False).count()
+    new_tasks_count = session.query(TaskModel).filter(TaskModel.agent == agent, TaskModel.completed == False).count()
+    session.close()
+    return {"new_messages": new_messages_count, "new_tasks": new_tasks_count}
