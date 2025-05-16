@@ -25,10 +25,13 @@ from backend.auth import router as auth_router
 app.include_router(auth_router)
 app.include_router(ai_router)
 
+from backend.autonomous_delivery import router as autonomous_router
+app.include_router(autonomous_router)
+
 # Example of protecting an endpoint with authentication
 @app.get("/protected")
 async def protected_route(current_user: dict = Depends(get_current_user)):
-    return {"message": f"Hello, {current_user['sub']}! This is a protected route."}
+    return {"message": f"Hello, {current_user.get('sub', current_user.get('username'))}! This is a protected route."}
 
 # Pydantic models for request/response
 class Address(BaseModel):
