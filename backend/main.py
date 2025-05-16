@@ -20,6 +20,9 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 app = FastAPI(title="Global AI Postal System API")
 
+from backend.auth import router as auth_router
+
+app.include_router(auth_router)
 app.include_router(ai_router)
 
 # Example of protecting an endpoint with authentication
