@@ -4,6 +4,9 @@ from pydantic import BaseModel
 import os
 import httpx
 import uuid
+from sqlalchemy.orm import Session
+from backend.database import SessionLocal
+from backend.models import Task as TaskModel
 
 router = APIRouter()
 
@@ -22,9 +25,6 @@ class Task(BaseModel):
     description: str
     status: str = "pending"
     result: str = None
-
-# In-memory store for tasks (for demo purposes)
-tasks_store = {}
 
 async def call_openai_api(prompt: str) -> str:
     headers = {
@@ -47,24 +47,64 @@ async def send_task(task: Task, api_key: str = Depends(verify_api_key)):
     """
     Receive a new task and process it using OpenAI API.
     """
-    tasks_store[task.id] = task
+    db: Session = SessionLocal()
     try:
+        db_task = TaskModel(
+            id=task.id,
+            agent="default_agent",
+            description=task.description,
+            completed=False,
+            due_date=None,
+            priority=3,
+            tags="",
+            related_documents=""
+        )
+        db.add(db_task)
+        db.commit()
+        db.refresh(db_task)
+
         result = await call_openai_api(task.description)
-        task.status = "completed"
-        task.result = result
+        db_task.completed = True
+        db_task.description = task.description
+        db_task.priority = 3
+        db_task.tags = ""
+        db_task.related_documents = ""
+        db_task.completed = True
+        db_task.result = result
+        db.commit()
+        db.refresh(db_task)
+        return {"id": db_task.id, "status": "completed", "result": result}
     except Exception as e:
-        task.status = "failed"
-        task.result = str(e)
-    tasks_store[task.id] = task
-    return {"id": task.id, "status": task.status, "result": task.result}
+        db.rollback()
+        return {"id": task.id, "status": "failed", "result": str(e)}
+    finally:
+        db.close()
 
 @router.get("/ai/get_responses/{agent_id}")
 async def get_ai_responses(agent_id: str, api_key: str = Depends(verify_api_key)):
     """
     Return all completed tasks for the agent.
     """
-    completed_tasks = [task for task in tasks_store.values() if task.status == "completed"]
-    return completed_tasks
+    db: Session = SessionLocal()
+    try:
+        tasks = db.query(TaskModel).filter(TaskModel.completed == True).all()
+        return [
+            {
+                "id": task.id,
+                "agent": task.agent,
+                "description": task.description,
+                "completed": task.completed,
+                "due_date": task.due_date.isoformat() if task.due_date else None,
+                "priority": task.priority,
+                "tags": task.tags.split(",") if task.tags else [],
+                "related_documents": task.related_documents.split(",") if task.related_documents else [],
+                "result": getattr(task, "result", None),
+                "created_at": task.created_at.isoformat() if task.created_at else None
+            }
+            for task in tasks
+        ]
+    finally:
+        db.close()
 
 @router.post("/ai/send_research_analysis")
 async def send_research_analysis(analysis_task: dict, api_key: str = Depends(verify_api_key)):
