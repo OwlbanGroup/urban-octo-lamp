@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from .ai_integration import router as ai_router, tasks_store
+from .ai_integration import router as ai_router
 from fastapi.security import OAuth2PasswordBearer
 from .auth import get_current_user as auth_get_current_user, router as auth_router
 from backend.payment import router as payment_router
@@ -16,7 +16,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from .models import Base, Address as AddressModel, Package as PackageModel, Message as MessageModel, Task as TaskModel
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/dbname")
+import os
+
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
 
 database = Database(DATABASE_URL)
 engine = create_engine(DATABASE_URL)
@@ -25,10 +27,16 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 app = FastAPI(title="Global AI Postal System API")
 
 # Add CORS middleware for frontend communication
+import os
+
 origins = [
     "http://localhost:3000",
-    # Add production frontend URL here
 ]
+
+# Add production frontend URL from environment variable if set
+prod_frontend_url = os.getenv("PROD_FRONTEND_URL")
+if prod_frontend_url:
+    origins.append(prod_frontend_url)
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,7 +45,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+    
 app.include_router(auth_router)
 app.include_router(ai_router)
 app.include_router(payment_router)
