@@ -28,7 +28,7 @@ The backend is built with FastAPI and uses SQLite for data storage.
 
 The backend API will be available at `http://localhost:8000`.
 
-## Frontend
+## Frontend Setup
 
 The frontend is a React app that interacts with the backend API.
 
@@ -71,7 +71,7 @@ The frontend will be available at `http://localhost:3000`.
 
 This project consists of a backend FastAPI service and a frontend React application.
 
-### Backend
+### Backend Deployment
 
 The backend is containerized using Docker. To build and run the backend container:
 
@@ -80,7 +80,7 @@ docker build -t backend-image .
 docker run -p 8000:8000 --env DATABASE_URL=sqlite:///./test.db --env PROD_FRONTEND_URL=http://localhost -d backend-image
 ```
 
-### Frontend
+### Frontend Deployment
 
 The frontend is a React app containerized using Docker. To build and run the frontend container:
 
@@ -107,7 +107,7 @@ This will start the backend on port 8000 and the frontend on port 3000.
 
 Make sure to update these variables as needed for your production environment.
 
-## Notes
+## Deployment Notes
 
 - The backend uses Uvicorn to serve the FastAPI app.
 - The frontend is served by Nginx in production.
