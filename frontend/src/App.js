@@ -4,6 +4,7 @@ import LoginForm from './LoginForm';
 import Subscription from './Subscription';
 import Dashboard from './Dashboard';
 import RegistrationForm from './RegistrationForm';
+import AITaskManager from './AITaskManager';
 
 function App({ initialLoggedIn = false }) {
   const [loggedIn, setLoggedIn] = React.useState(initialLoggedIn);
@@ -18,6 +19,9 @@ function App({ initialLoggedIn = false }) {
 
   // Subscription state
   const [apiKey, setApiKey] = React.useState('');
+
+  // UI state for showing AI Task Manager
+  const [showAITaskManager, setShowAITaskManager] = React.useState(false);
 
   const handleLogin = () => {
     setLoggedIn(true);
@@ -80,7 +84,15 @@ function App({ initialLoggedIn = false }) {
         )}
       </section>
 
-      <Dashboard apiKey={apiKey} agent={agent} />
+      <button onClick={() => setShowAITaskManager(!showAITaskManager)} style={{ marginTop: 20 }}>
+        {showAITaskManager ? 'Hide' : 'Show'} AI Task Manager
+      </button>
+
+      {showAITaskManager ? (
+        <AITaskManager apiKey={apiKey} agent={agent} />
+      ) : (
+        <Dashboard apiKey={apiKey} agent={agent} />
+      )}
 
       <section style={{ marginTop: 40 }}>
         <h2>AI Agent Mail Inbox</h2>

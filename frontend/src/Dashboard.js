@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import AITaskManager from './AITaskManager';
 
 function Dashboard({ apiKey, agent }) {
   const [newMessagesCount, setNewMessagesCount] = useState(0);
@@ -143,6 +144,8 @@ function Dashboard({ apiKey, agent }) {
           </ul>
         )}
       </section>
+
+      <AITaskManager apiKey={apiKey} agent={agent} />
     </div>
   );
 }
