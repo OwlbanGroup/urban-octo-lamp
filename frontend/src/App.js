@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import LoginForm from './LoginForm';
-import Subscription from './Subscription';
-import Dashboard from './Dashboard';
-import RegistrationForm from './RegistrationForm';
-import AITaskManager from './AITaskManager';
+import LoginForm from 'LoginForm';
+import Subscription from 'Subscription';
+import Dashboard from 'Dashboard';
+import RegistrationForm from 'RegistrationForm';
+import AITaskManager from 'AITaskManager';
 
 function App({ initialLoggedIn = false }) {
   const [loggedIn, setLoggedIn] = useState(initialLoggedIn);
