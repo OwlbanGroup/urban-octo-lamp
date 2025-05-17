@@ -7,7 +7,6 @@ function Dashboard({ apiKey, agent }) {
   const [recentTasks, setRecentTasks] = useState([]);
   const [researchSummary, setResearchSummary] = useState('Loading analytics...');
   const [revenueOpportunities, setRevenueOpportunities] = useState([]);
-  const [packageStatus, setPackageStatus] = useState(null);
 
   useEffect(() => {
     fetchNewMessagesCount();

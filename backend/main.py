@@ -1,4 +1,6 @@
+import os
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from .ai_integration import router as ai_router, tasks_store
 from fastapi.security import OAuth2PasswordBearer
 from .auth import get_current_user as auth_get_current_user, router as auth_router
@@ -14,13 +16,27 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from .models import Base, Address as AddressModel, Package as PackageModel, Message as MessageModel, Task as TaskModel
 
-DATABASE_URL = "sqlite:///./test.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/dbname")
 
 database = Database(DATABASE_URL)
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 app = FastAPI(title="Global AI Postal System API")
+
+# Add CORS middleware for frontend communication
+origins = [
+    "http://localhost:3000",
+    # Add production frontend URL here
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth_router)
 app.include_router(ai_router)
@@ -95,6 +111,33 @@ async def send_message(message: dict):
     session.close()
     return {"message": "Message sent", "id": msg_id}
 
+from passlib.context import CryptContext
+from backend.models import User
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+from fastapi import status
+
+@app.post("/api/register", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def register_user(user: dict):
+    email = user.get("email")
+    full_name = user.get("full_name")
+    password = user.get("password")
+    if not email or not full_name or not password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing required fields")
+
+    session = SessionLocal()
+    existing_user = session.query(User).filter(User.email == email).first()
+    if existing_user:
+        session.close()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already exists")
+    hashed_password = pwd_context.hash(password)
+    new_user = User(email=email, full_name=full_name, hashed_password=hashed_password, is_active=True, is_subscribed=False)
+    session.add(new_user)
+    session.commit()
+    session.close()
+    return {"message": "Registration successful! You can now log in."}
+        
 @app.get("/messages/{recipient}", response_model=list)
 async def get_messages(recipient: str):
     session = SessionLocal()
