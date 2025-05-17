@@ -1,9 +1,11 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import React, { act as reactAct } from 'react';
 import App from '../App';
 
 test('renders login form and allows input', () => {
-  render(<App />);
+  reactAct(() => {
+    render(<App />);
+  });
   const usernameInput = screen.getByPlaceholderText(/username/i);
   const passwordInput = screen.getByPlaceholderText(/password/i);
   expect(usernameInput).toBeInTheDocument();

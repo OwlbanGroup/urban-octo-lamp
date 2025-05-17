@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { act } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from '../App';
 
 describe('Authentication Flow', () => {
   test('renders login form and allows input', () => {
-    render(<App />);
+    act(() => {
+      render(<App />);
+    });
     const usernameInput = screen.getByPlaceholderText(/username/i);
     const passwordInput = screen.getByPlaceholderText(/password/i);
     expect(usernameInput).toBeInTheDocument();
@@ -18,7 +20,9 @@ describe('Authentication Flow', () => {
   });
 
   test('shows error message on invalid login', async () => {
-    render(<App />);
+    act(() => {
+      render(<App />);
+    });
     const usernameInput = screen.getByPlaceholderText(/username/i);
     const passwordInput = screen.getByPlaceholderText(/password/i);
     const loginButton = screen.getByRole('button', { name: /login/i });
@@ -34,7 +38,9 @@ describe('Authentication Flow', () => {
   });
 
   test('successful login redirects to dashboard', async () => {
-    render(<App />);
+    act(() => {
+      render(<App />);
+    });
     const usernameInput = screen.getByPlaceholderText(/username/i);
     const passwordInput = screen.getByPlaceholderText(/password/i);
     const loginButton = screen.getByRole('button', { name: /login/i });

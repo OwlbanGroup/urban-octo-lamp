@@ -6,16 +6,51 @@ function AITaskManager({ apiKey, agent }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [revenueOpportunities, setRevenueOpportunities] = useState([]);
+  const [loadingOpportunities, setLoadingOpportunities] = useState(false);
+  const [errorOpportunities, setErrorOpportunities] = useState(null);
+
   const fetchTasks = async () => {
     try {
-      const response = await fetch(`/ai/get_responses/${agent}`, {
+      const response = await fetch('/ai/get_responses/' + agent, {
         headers: { 'X-API-KEY': apiKey || 'default-secure-api-key' },
       });
       if (!response.ok) throw new Error('Failed to fetch tasks');
       const data = await response.json();
-      setTasks(data);
+      // Ensure tasks is always an array
+      if (Array.isArray(data)) {
+        setTasks(data);
+      } else if (Array.isArray(data.tasks)) {
+        setTasks(data.tasks);
+      } else {
+        setTasks([]);
+      }
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const fetchRevenueOpportunities = async () => {
+    setLoadingOpportunities(true);
+    setErrorOpportunities(null);
+    try {
+      const response = await fetch('/ai/revenue_opportunities', {
+        headers: { 'X-API-KEY': apiKey || 'default-secure-api-key' },
+      });
+      if (!response.ok) {
+        setRevenueOpportunities([]); // Clear opportunities on error
+        throw new Error('Failed to fetch revenue opportunities');
+      }
+      const data = await response.json();
+      if (data.opportunities && Array.isArray(data.opportunities)) {
+        setRevenueOpportunities(data.opportunities);
+      } else {
+        setRevenueOpportunities([]);
+      }
+    } catch (err) {
+      setErrorOpportunities(err.message);
+    } finally {
+      setLoadingOpportunities(false);
     }
   };
 
@@ -29,7 +64,7 @@ function AITaskManager({ apiKey, agent }) {
     if (!newTaskDescription.trim()) return;
     setLoading(true);
     setError(null);
-    const taskId = `task-${Date.now()}`;
+    const taskId = 'task-' + Date.now();
     try {
       const response = await fetch('/ai/send_task', {
         method: 'POST',
@@ -66,6 +101,21 @@ function AITaskManager({ apiKey, agent }) {
         </button>
       </div>
       {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+
+      <button onClick={fetchRevenueOpportunities} disabled={loadingOpportunities} style={{ marginTop: 20 }}>
+        {loadingOpportunities ? 'Identifying...' : 'Identify Revenue Opportunities'}
+      </button>
+      {errorOpportunities && <p style={{ color: 'red' }}>Error: {errorOpportunities}</p>}
+      {revenueOpportunities.length > 0 && (
+        <ul>
+          {revenueOpportunities.map((opportunity) => (
+            <li key={opportunity.id}>
+              <strong>{opportunity.description}</strong> - Potential Revenue: {opportunity.potential_revenue}
+            </li>
+          ))}
+        </ul>
+      )}
+
       <h3>Tasks</h3>
       {tasks.length === 0 ? (
         <p>No tasks found.</p>
