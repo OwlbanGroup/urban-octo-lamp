@@ -107,6 +107,18 @@ This will start the backend on port 8000 and the frontend on port 3000.
 
 Make sure to update these variables as needed for your production environment.
 
+### Production Deployment
+
+For production deployment, use the provided `docker-compose.prod.yml` file which is configured without volume mounts and with production environment variables.
+
+To build and run the production containers:
+
+```bash
+docker-compose -f docker-compose.prod.yml up --build -d
+```
+
+This will start the backend on port 8000 and the frontend on port 3000 with production settings.
+
 ## Deployment Notes
 
 - The backend uses Uvicorn to serve the FastAPI app.
