@@ -1,0 +1,23 @@
+# Ignore Python cache and test files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+test.db
+backend/test_*.py
+backend/test.db
+
+# Ignore git and docker files
+.git
+.gitignore
+Dockerfile
+docker-compose.yml
+docker-compose.prod.yml
+
+# Ignore node modules and frontend files not needed for backend build
+frontend/
+node_modules/
+*.log
+*.env

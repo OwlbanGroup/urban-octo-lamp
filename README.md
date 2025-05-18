@@ -80,7 +80,7 @@ docker build -t backend-image .
 docker run -p 8000:8000 --env DATABASE_URL=sqlite:///./test.db --env PROD_FRONTEND_URL=http://localhost -d backend-image
 ```
 
-### Frontend Deployment
+PREPAER Deployment
 
 The frontend is a React app containerized using Docker. To build and run the frontend container:
 
